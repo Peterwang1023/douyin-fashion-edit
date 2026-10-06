@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "Noto Serif SC";
+          font-weight: 500;
+          src: url("assets/fonts/serif-500.woff2") format("woff2");
+        }
+        @font-face {
+          font-family: "Noto Serif SC";
+          font-weight: 700;
+          src: url("assets/fonts/serif-700.woff2") format("woff2");
+        }
+        /* Wedding-film captions: warm white serif straight on the footage.
+           No boxes; legibility comes from a soft text shadow plus a faint
+           graduated darkening of the top of the frame (like an ND grad),
+           which deepens slightly only while a caption block is on screen. */
+        #{{OID}}-root {
+          --ink: #fffaf3;
+          --gold: #f3dfbb;
+          --shade: 22, 20, 20;
+          --glow: 0 1px 2px rgba(var(--shade), 0.6), 0 2px 10px rgba(var(--shade), 0.5), 0 0 30px rgba(var(--shade), 0.3);
+          position: absolute;
+          inset: 0;
+          color: var(--ink);
+          font-family: "Noto Serif SC", serif;
+        }
+        .layer {
+          position: absolute;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: center;
+        }
+        .block {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        #shade {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: 700px;
+          background: linear-gradient(
+            to bottom,
+            rgba(var(--shade), 0.4) 0%,
+            rgba(var(--shade), 0.32) 30%,
+            rgba(var(--shade), 0.16) 60%,
+            rgba(var(--shade), 0.05) 82%,
+            rgba(var(--shade), 0) 100%
+          );
+          opacity: 0;
+        }
+        .hair {
+          display: block;
+          width: 56px;
+          height: 2px;
+          background: var(--gold);
+          box-shadow: 0 1px 6px rgba(var(--shade), 0.45);
+        }
+        .row {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+        }
+
+        /* persistent brand line, top centre (clear of Douyin's top bar) */
+        #brand {
+          top: 200px;
+        }
+        .brand-text {
+          font-weight: 500;
+          font-size: 32px;
+          letter-spacing: 0.5em;
+          padding-left: 0.5em;
+          text-shadow: var(--glow);
+        }
+
+        /* opening title */
+        #title {
+          top: 280px;
+        }
+        .t1 {
+          font-weight: 700;
+          font-size: 80px;
+          line-height: 1.2;
+          letter-spacing: 0.1em;
+          padding-left: 0.1em;
+          text-align: center;
+          text-shadow: var(--glow);
+        }
+        .t2 {
+          color: var(--ink);
+          font-weight: 500;
+          font-size: 36px;
+          letter-spacing: 0.22em;
+          padding-left: 0.22em;
+          text-shadow: var(--glow);
+        }
+        #title .row {
+          margin-top: 14px;
+        }
+
+        /* item lines, only over full-body shots */
+        #chips {
+          top: 290px;
+        }
+        #chips .block {
+          gap: 12px;
+        }
+        .chip {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          white-space: nowrap;
+          text-shadow: var(--glow);
+        }
+        .chip-k {
+          font-weight: 500;
+          font-size: 34px;
+          letter-spacing: 0.2em;
+          opacity: 0.9;
+        }
+        .chip-dot {
+          display: block;
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--gold);
+          box-shadow: 0 1px 4px rgba(var(--shade), 0.5);
+        }
+        .chip-v {
+          font-weight: 700;
+          font-size: 42px;
+          letter-spacing: 0.08em;
+        }
+
+        /* closing brand */
+        #end {
+          top: 250px;
+        }
+        .e1 {
+          font-weight: 700;
+          font-size: 100px;
+          line-height: 1.15;
+          letter-spacing: 0.24em;
+          padding-left: 0.24em;
+          text-shadow: var(--glow);
+        }
+        .e-rule {
+          display: block;
+          width: 180px;
+          height: 2px;
+          margin: 16px 0 18px;
+          background: var(--gold);
+          box-shadow: 0 1px 6px rgba(var(--shade), 0.45);
+        }
+        .e2 {
+          font-weight: 500;
+          font-size: 36px;
+          letter-spacing: 0.2em;
+          padding-left: 0.2em;
+          text-shadow: var(--glow);
+        }
+
+        /* hidden until their entrance tweens */
+        #brand-line,
+        #title-block,
+        .chip,
+        #end-block {
+          opacity: 0;
+        }
+      </style>
+      <div id="{{OID}}-root" data-composition-id="{{OID}}" data-width="1080" data-height="1920">
+        <div id="shade"></div>
+
+        <div id="brand" class="layer">
+          <div id="brand-line" class="row">
+            <span class="hair"></span><span class="brand-text">{{BRAND}}</span><span class="hair"></span>
+          </div>
+        </div>
+
+        <div id="title" class="layer">
+          <div id="title-block" class="block">
+            <div id="t1" class="t1">{{TITLE}}</div>
+            <div id="t2-row" class="row">
+              <span class="hair t-hair"></span><span id="t2" class="t2">{{SUBTITLE}}</span><span class="hair t-hair"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="chips" class="layer">
+          <div class="block">
+{{CHIPS}}
+          </div>
+        </div>
+
+        <div id="end" class="layer">
+          <div id="end-block" class="block">
+            <div id="e1" class="e1">{{BRAND}}</div>
+            <span id="e-rule" class="e-rule"></span>
+            <div id="e2" class="e2">{{END_LINE}}</div>
+          </div>
+        </div>
+      </div>
+      <script>
+        const T = {{TIMING}};
+        const tl = gsap.timeline({ paused: true });
+
+        // top shade: faint under the brand line, a touch deeper while a caption block shows.
+        // Caption windows closer than 1.2s are merged so the shade never pumps.
+        const spans = [[T.titleIn, T.titleOut + 0.5], [T.chipsIn, T.chipsOut + 0.45], [T.endIn, T.total]].sort((a, b) => a[0] - b[0]);
+        const merged = [];
+        for (const sp of spans) {
+          const last = merged[merged.length - 1];
+          if (last && sp[0] - last[1] < 1.2) last[1] = Math.max(last[1], sp[1]);
+          else merged.push([...sp]);
+        }
+        let cursor = 0.1;
+        merged.forEach(([a, b], i) => {
+          const inAt = Math.max(cursor, a - 0.3);
+          tl.fromTo("#shade", { opacity: i === 0 ? 0 : 0.5 }, { opacity: 1, duration: 0.5, ease: "sine.inOut", immediateRender: i === 0 }, inAt);
+          if (b < T.total - 0.1) tl.to("#shade", { opacity: 0.5, duration: 0.6, ease: "sine.inOut" }, b);
+          cursor = b + 0.6;
+        });
+
+        tl.fromTo("#brand-line", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.3);
+
+        tl.fromTo("#title-block", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, T.titleIn);
+        tl.fromTo(".t-hair", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T.titleIn + 0.35);
+        tl.fromTo("#t2", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.out" }, T.titleIn + 0.35);
+        tl.to("#title-block", { opacity: 0, y: -20, duration: 0.5, ease: "power2.in" }, T.titleOut);
+
+        gsap.utils.toArray(".chip").forEach((chip, i) => {
+          tl.fromTo(chip, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, T.chipsIn + i * 0.3);
+        });
+        tl.to(".chip", { opacity: 0, duration: 0.45, ease: "power1.in", stagger: 0.05 }, T.chipsOut);
+
+        tl.to("#brand-line", { opacity: 0, duration: 0.35, ease: "power1.in" }, T.endIn - 0.3);
+        tl.fromTo("#end-block", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, T.endIn);
+        tl.fromTo("#e-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "expo.out" }, T.endIn + 0.3);
+        tl.fromTo("#e2", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.out" }, T.endIn + 0.45);
+
+        window.__timelines["{{OID}}"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

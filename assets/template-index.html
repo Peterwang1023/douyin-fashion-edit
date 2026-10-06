@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>{{ID}}</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #1c1410;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1c1410;
+      }
+      .shot {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="{{ID}}" data-start="0" data-width="1080" data-height="1920" data-duration="{{TOTAL}}">
+{{VIDEOS}}
+
+      <audio id="bgm" src="{{BGM}}" data-start="0" data-duration="{{TOTAL}}" data-track-index="5" data-volume="1"></audio>
+
+      <div
+        id="{{OID}}"
+        data-composition-id="{{OID}}"
+        data-composition-src="compositions/{{OID}}.html"
+        data-start="0"
+        data-duration="{{TOTAL}}"
+        data-track-index="1"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+    </div>
+    <script>
+      window.__timelines["{{ID}}"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>
