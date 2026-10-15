@@ -4,7 +4,7 @@
     python beautify.py --preview KEY [KEY ...] --project P          before|after stills (+ face close-up) into review/
 
 Face: wrinkle softening that keeps skin texture, brightening that spares already-bright skin,
-less yellow, natural-red lips scaled to the face's own brightness, soft blush, thin eyeliner,
+less yellow, natural-red lips scaled to the face's own brightness, optional redness calming, soft blush, thin eyeliner,
 slightly larger eyes, a smooth jawline slim. Body: slimmer waist/hips/thighs, ~4% longer legs
 (extended downward so heads never rise into the caption zone).
 
@@ -32,6 +32,7 @@ P = dict(
     deyellow=0.85,       # b* multiplier on skin
     lip_a=0.55, lip_b=0.40, lip_dark=6.0,  # pull toward natural red (L*41 a*58 b*33)
     blush=7.0,           # a* added at blush centre
+    redness=0.0,         # 0..1: share of the face's excess redness (a* above 12) taken out; for flushed / too-pink cheeks
     face_slim=0.065,     # lower face contour moved this fraction toward the face midline (peak)
     waist=0.06, hip=0.05, thigh=0.04, shoulder=0.02,
     legs=0.04,           # hip->ankle lengthening
@@ -40,6 +41,7 @@ P = dict(
     tone=0.5,            # evening of redness / spots (a*, b* smoothing)
     liner=0.6,           # eyeliner opacity (dark brown, thin, small wing)
     eye_big=0.13,        # eye enlargement at the eye centre (local magnification)
+    smile=0.0,           # mouth-corner lift ("smile lips"), 1.0 ~ 10% of mouth width; off by default
 )
 
 FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176,
@@ -155,7 +157,7 @@ def face_edits(img, fl, env, skin_m):
     if env <= 0.01 or fw < 20:
         return img, None
     x0, y0 = np.floor(fl.min(0) - fw * 0.6).astype(int)
-    x1, y1 = np.ceil(fl.max(0) + fw * 0.6).astype(int)
+    x1, y1 = np.ceil(fl.max(0) + np.array([fw * 0.6, fw * 1.3])).astype(int)    # reach down over the neck
     x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, W), min(y1, H)
     if x1 - x0 < 8 or y1 - y0 < 8:
         return img, None
@@ -226,13 +228,21 @@ def face_edits(img, fl, env, skin_m):
         vis = np.clip(abs(c[0] - nose[0]) / (0.22 * fw), 0, 1) ** 1.5
         sg = 0.11 * fw
         blush += vis * np.exp(-((xx - c[0]) ** 2 + (yy - c[1]) ** 2) / (2 * sg * sg))
-    blush = np.clip(blush, 0, 1) * oval * (1 - np.clip(lips * 3, 0, 1)) * env
+    no_lips = 1 - np.clip(lips * 3, 0, 1)
+    if P['redness'] > 0:   # calm natural flush first, so the (lighter) blush lands on even skin
+        soft = cv2.GaussianBlur(oval, (0, 0), max(1.0, fw * 0.05))   # wide feather: no edge against neck and ears
+        L[..., 1] -= P['redness'] * np.clip(L[..., 1] - 12, 0, None) * soft * no_lips * env
+    blush = np.clip(blush, 0, 1) * oval * no_lips * env
     L[..., 1] += P['blush'] * blush
     L[..., 2] += 2.0 * blush
     L[..., 0] -= 1.5 * blush
 
     # skin brightening (mid-tones only, highlights protected) + less yellow
-    sm = skin_m[y0:y1, x0:x1]
+    # skin mask limited to this ROI with feathered edges, so brightening never stops at a hard line
+    hh, ww = shp
+    ry = np.minimum(np.arange(hh), np.arange(hh)[::-1])[:, None] / max(1.0, 0.18 * hh)
+    rx = np.minimum(np.arange(ww), np.arange(ww)[::-1])[None, :] / max(1.0, 0.18 * ww)
+    sm = skin_m[y0:y1, x0:x1] * np.clip(np.minimum(ry, rx), 0, 1)
     # already-bright (sun-lit) skin gets almost no lift, so faces never go back to blown-out
     lift = P['brighten'] * np.sin(np.pi * np.clip(L[..., 0] / 100, 0, 1)) * np.clip((92 - L[..., 0]) / 25, 0, 1) * sm
     L[..., 0] += lift
@@ -283,6 +293,19 @@ def face_edits(img, fl, env, skin_m):
         q = np.clip(1 - (rx * rx + ry * ry) / (R * R), 0, 1) ** 2
         s_ = P['eye_big'] * k_size * env * q
         dx += rx * s_; dy += ry * s_
+    # smile lips: lift the two mouth corners up and a touch outward with a smooth local field;
+    # fades out on small or turned faces (foreshortened mouth)
+    mw = np.linalg.norm(fl[61] - fl[291])
+    k_front = float(np.clip((mw / fw - 0.25) / 0.1, 0, 1)) * float(np.clip((mw - 14) / 10, 0, 1))
+    if P['smile'] > 0 and k_front > 0.01:
+        mid = (fl[61] + fl[291]) / 2
+        r = 0.3 * mw
+        for idx in (61, 291):
+            c = fl[idx] - o
+            outw = (fl[idx] - mid) / (np.linalg.norm(fl[idx] - mid) + 1e-6)
+            d = (up * 0.10 + outw * 0.03) * mw * P['smile'] * env * k_front
+            w = np.exp(-((xx - c[0]) ** 2 + (yy - c[1]) ** 2) / (2 * r * r))
+            dx += w * d[0]; dy += w * d[1]
     return img, (x0, y0, dx, dy)
 
 
@@ -385,7 +408,7 @@ def render(key, preview_at=None):
     ks = np.array([body_strength(np.concatenate([pose_s[t], vis[t][:, None]], 1), pose_env[t]) for t in range(T)])
     k_body = gaussian_filter1d(ks[:, 0], 4, mode='nearest')
     k_legs = gaussian_filter1d(ks[:, 1], 8, mode='nearest')  # strong smoothing: the stretch shifts the upper body
-    # how far the upper body may be lifted: keep the head top below the caption zone (y ~ 520)
+    # how far the upper body may be lifted: keep the head top below the caption zone (y ~ 580)
     lifts = np.zeros(T)
     for t in range(T):
         pl = np.concatenate([pose_s[t], vis[t][:, None]], 1)
@@ -396,7 +419,7 @@ def render(key, preview_at=None):
             top = pose_s[t][0, 1] - 0.55 * (pose_s[t][[11, 12], 1].mean() - pose_s[t][0, 1])
         else:
             top = H
-        lifts[t] = np.clip(top - 520, 0, delta)
+        lifts[t] = np.clip(top - 580, 0, delta)
     lifts = gaussian_filter1d(lifts, 8, mode='nearest')
     for t, fr in enumerate(read_frames(path)):
         if preview_at is not None and t not in preview_at:

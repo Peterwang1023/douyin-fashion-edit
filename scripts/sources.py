@@ -18,7 +18,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import Project, project_arg, probe  # noqa: E402
+from common import Project, project_arg, probe, video_size  # noqa: E402
 
 VIDEO_EXT = ('.mp4', '.mov', '.m4v', '.mkv')
 
@@ -27,7 +27,8 @@ def info(path):
     try:
         v = probe(path, 'stream=codec_name,width,height,r_frame_rate')[0].split(',')
         d = float(probe(path)[0])
-        return {'codec': v[0], 'w': int(v[1]), 'h': int(v[2]), 'fps': v[3], 'dur': round(d, 2)}
+        w, h = video_size(path)      # honours the rotation flag
+        return {'codec': v[0], 'w': w, 'h': h, 'fps': v[3], 'dur': round(d, 2)}
     except Exception:
         return None
 

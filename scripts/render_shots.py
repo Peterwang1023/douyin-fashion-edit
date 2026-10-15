@@ -5,6 +5,8 @@
 Each shot gets up to HANDLE extra seconds of tail (never past the source end) so the
 builders can snap cuts to the beat and feed whip transitions. Real lengths go to config/avail.json.
 Old files of a re-rendered outfit are removed first (a changed source key would otherwise linger).
+An EDL entry may carry {"speed": 0.6} for slow motion (needs 50/60 fps sources to stay smooth):
+the shot then consumes duration * speed seconds of source.
 """
 import os
 import subprocess
@@ -12,7 +14,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import Project, duration, grade_filter, project_arg  # noqa: E402
+from common import Project, duration, grade_filter, project_arg, shot_parts  # noqa: E402
 
 HANDLE = 1.5
 
@@ -40,12 +42,14 @@ def main():
 
     def run(job):
         o, i, shot, g = job
-        k, st, d = shot[:3]
+        k, st, d, _, opts = shot_parts(shot)
+        speed = float(opts.get('speed', 1.0))
         L, Wm, Hl = (list(g) + [0.5])[:3]
-        t = round(min(d + HANDLE, duration(src[k]) - st - 0.05), 3)
+        t = round(min(d + HANDLE, (duration(src[k]) - st - 0.05) / speed), 3)        # output seconds
         out = os.path.join(out_dir, f'{o}_{i}_{k}.mp4')
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', str(st), '-i', src[k], '-t', str(t), '-an',
-                        '-vf', 'fps=30,' + grade_filter(L, Wm, Hl) + ',format=yuv420p',
+        slow = f'setpts=PTS/{speed},' if speed != 1.0 else ''
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', str(st), '-i', src[k], '-t', f'{t * speed + 0.1:.3f}', '-an',
+                        '-vf', slow + 'fps=30,' + grade_filter(L, Wm, Hl) + ',format=yuv420p', '-t', str(t),
                         '-c:v', 'libx264', '-preset', 'medium', '-crf', '15', '-profile:v', 'high', '-pix_fmt', 'yuv420p',
                         '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-movflags', '+faststart', out],
                        check=True)

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "Noto Serif SC";
+          font-weight: 500;
+          src: url("assets/fonts/serif-500.woff2") format("woff2");
+        }
+        @font-face {
+          font-family: "Noto Serif SC";
+          font-weight: 700;
+          src: url("assets/fonts/serif-700.woff2") format("woff2");
+        }
+        /* Minimal captions for style clones: the reference carries no text, so only a quiet
+           brand line (and optionally an end card) in the wedding-film style. */
+        #{{OID}}-root {
+          --ink: #fffaf3;
+          --gold: #f3dfbb;
+          --shade: 22, 20, 20;
+          --glow: 0 1px 2px rgba(var(--shade), 0.6), 0 2px 10px rgba(var(--shade), 0.5), 0 0 30px rgba(var(--shade), 0.3);
+          position: absolute;
+          inset: 0;
+          color: var(--ink);
+          font-family: "Noto Serif SC", serif;
+        }
+        #shade {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: 640px;
+          background: linear-gradient(to bottom, rgba(var(--shade), 0.34) 0%, rgba(var(--shade), 0.22) 35%, rgba(var(--shade), 0.08) 70%, rgba(var(--shade), 0) 100%);
+          opacity: 0;
+        }
+        .layer {
+          position: absolute;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: center;
+        }
+        .block {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .row {
+          display: flex;
+          align-items: center;
+          gap: 22px;
+        }
+        .hair {
+          display: block;
+          width: 56px;
+          height: 2px;
+          background: var(--gold);
+          box-shadow: 0 1px 6px rgba(var(--shade), 0.45);
+        }
+        #brand {
+          top: 200px;
+        }
+        .brand-text {
+          font-weight: 500;
+          font-size: 32px;
+          letter-spacing: 0.5em;
+          padding-left: 0.5em;
+          text-shadow: var(--glow);
+        }
+        #end {
+          top: 250px;
+        }
+        .e1 {
+          font-weight: 700;
+          font-size: 100px;
+          line-height: 1.15;
+          letter-spacing: 0.24em;
+          padding-left: 0.24em;
+          text-shadow: var(--glow);
+        }
+        .e-rule {
+          display: block;
+          width: 180px;
+          height: 2px;
+          margin: 16px 0 18px;
+          background: var(--gold);
+          box-shadow: 0 1px 6px rgba(var(--shade), 0.45);
+        }
+        .e2 {
+          font-weight: 500;
+          font-size: 36px;
+          letter-spacing: 0.2em;
+          padding-left: 0.2em;
+          text-shadow: var(--glow);
+        }
+        #brand-line,
+        #end-block {
+          opacity: 0;
+        }
+      </style>
+      <div id="{{OID}}-root" data-composition-id="{{OID}}" data-width="1080" data-height="1920">
+        <div id="shade"></div>
+        <div id="brand" class="layer">
+          <div id="brand-line" class="row">
+            <span class="hair"></span><span class="brand-text">{{BRAND}}</span><span class="hair"></span>
+          </div>
+        </div>
+        <div id="end" class="layer">
+          <div id="end-block" class="block">
+            <div id="e1" class="e1">{{BRAND}}</div>
+            <span id="e-rule" class="e-rule"></span>
+            <div id="e2" class="e2">{{END_LINE}}</div>
+          </div>
+        </div>
+      </div>
+      <script>
+        const T = {{TIMING}};
+        const tl = gsap.timeline({ paused: true });
+        if (T.brand) {
+          tl.fromTo("#shade", { opacity: 0 }, { opacity: 0.8, duration: 0.8, ease: "sine.out" }, 0.2);
+          tl.fromTo("#brand-line", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0.4);
+        }
+        if (T.endIn !== null) {
+          if (T.brand) tl.to("#brand-line", { opacity: 0, duration: 0.4, ease: "power1.in" }, T.endIn - 0.3);
+          tl.to("#shade", { opacity: 1, duration: 0.6, ease: "sine.inOut" }, T.endIn - 0.3);
+          tl.fromTo("#end-block", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.0, ease: "power3.out" }, T.endIn);
+          tl.fromTo("#e-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "expo.out" }, T.endIn + 0.3);
+          tl.fromTo("#e2", { opacity: 0 }, { opacity: 1, duration: 0.7, ease: "sine.out" }, T.endIn + 0.5);
+        }
+        window.__timelines["{{OID}}"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

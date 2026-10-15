@@ -2,6 +2,7 @@
 
     python review.py single OUTFIT --project P          title, chip shots (in/mid/out), end card
     python review.py combo COMBO --project P            hook, around the first change, each outfit, end card
+    python review.py clone CLONE --project P            middle of every shot + the end (right after render.py)
     python review.py file VIDEO --at 1.2,4.6,9 [--out x.jpg]
     python review.py zoom VIDEO --at 5.0 --box x,y,w,h  2x crop (faces, caption vs head clearance)
 
@@ -11,6 +12,7 @@ cover the clothes, faces must not be blown out, retouch must look natural, no st
 import argparse
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -51,6 +53,13 @@ def combo(pr, cid):
     return sheet(pr.path('renders', f'combo-{cid}.mp4'), times, pr.path('review', f'render_combo_{cid}.jpg'), cid)
 
 
+def clone(pr, cid):
+    page = open(pr.path('index.html'), encoding='utf-8').read()
+    spans = [(float(a), float(b)) for a, b in re.findall(r'<video id="shot-\d+"[^>]*data-start="([0-9.]+)" data-duration="([0-9.]+)"', page)]
+    times = [s + d / 2 for s, d in spans] + [spans[-1][0] + spans[-1][1] - 0.15]
+    return sheet(pr.path('renders', f'clone-{cid}.mp4'), times, pr.path('review', f'render_clone_{cid}.jpg'), cid)
+
+
 def zoom(video, t, box, out):
     x, y, w, h = [int(v) for v in box.split(',')]
     a = grab_rgb(video, t, 1080, 1920)
@@ -63,6 +72,7 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     s = project_arg(sub.add_parser('single')); s.add_argument('outfit')
     s = project_arg(sub.add_parser('combo')); s.add_argument('combo')
+    s = project_arg(sub.add_parser('clone')); s.add_argument('clone')
     s = sub.add_parser('file'); s.add_argument('video'); s.add_argument('--at', required=True); s.add_argument('--out')
     s = sub.add_parser('zoom'); s.add_argument('video'); s.add_argument('--at', type=float, required=True)
     s.add_argument('--box', default='0,100,1080,900'); s.add_argument('--out')
@@ -71,6 +81,8 @@ def main():
         single(Project(a.project), a.outfit)
     elif a.cmd == 'combo':
         combo(Project(a.project), a.combo)
+    elif a.cmd == 'clone':
+        clone(Project(a.project), a.clone)
     elif a.cmd == 'file':
         sheet(a.video, [float(x) for x in a.at.split(',')], a.out or os.path.splitext(a.video)[0] + '_sheet.jpg')
     else:

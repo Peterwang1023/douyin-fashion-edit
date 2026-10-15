@@ -233,9 +233,10 @@
 
         tl.fromTo("#brand-line", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.3);
 
-        tl.fromTo("#title-block", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, T.titleIn);
-        tl.fromTo(".t-hair", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T.titleIn + 0.35);
-        tl.fromTo("#t2", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.out" }, T.titleIn + 0.35);
+        // the title is the hook: readable within half a second of the first frame
+        tl.fromTo("#title-block", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, T.titleIn);
+        tl.fromTo(".t-hair", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T.titleIn + 0.25);
+        tl.fromTo("#t2", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.out" }, T.titleIn + 0.25);
         tl.to("#title-block", { opacity: 0, y: -20, duration: 0.5, ease: "power2.in" }, T.titleOut);
 
         gsap.utils.toArray(".chip").forEach((chip, i) => {
@@ -244,9 +245,9 @@
         tl.to(".chip", { opacity: 0, duration: 0.45, ease: "power1.in", stagger: 0.05 }, T.chipsOut);
 
         tl.to("#brand-line", { opacity: 0, duration: 0.35, ease: "power1.in" }, T.endIn - 0.3);
-        tl.fromTo("#end-block", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, T.endIn);
-        tl.fromTo("#e-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "expo.out" }, T.endIn + 0.3);
-        tl.fromTo("#e2", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "sine.out" }, T.endIn + 0.45);
+        tl.fromTo("#end-block", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, T.endIn);
+        tl.fromTo("#e-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, T.endIn + 0.25);
+        tl.fromTo("#e2", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.out" }, T.endIn + 0.35);
 
         window.__timelines["{{OID}}"] = tl;
       </script>

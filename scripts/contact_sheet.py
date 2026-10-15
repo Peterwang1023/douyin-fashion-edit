@@ -4,6 +4,8 @@
     python contact_sheet.py strips   [KEY ...] --project P   2 fps strip per clip with timestamps   -> pick shot in/out points
     python contact_sheet.py torso KEY@SEC [KEY@SEC ...]      upper-body crops side by side          -> tell similar garments apart
     python contact_sheet.py edl OUTFIT --project P           middle frame of every EDL shot of one outfit
+    python contact_sheet.py pace REF.mp4@4.4 KEY@1.0 ...     2 s at 6 fps per row: compare walking pace of a reference
+                                                         with our real-time footage -> pick a slow-motion speed
 
 Keys are source keys from config/sources.json (default: all sources).
 """
@@ -12,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import MODEL_DIR, Project, duration, font, grab_rgb, project_arg, video_size  # noqa: E402
+from common import MODEL_DIR, Project, duration, font, grab_rgb, project_arg, shot_parts, video_size  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 
@@ -114,12 +116,28 @@ def torso(pr, specs):
     save(sheet, pr, 'torso.jpg')
 
 
+def pace(pr, specs):
+    """Count steps per row: a reference at 1.2-1.5 steps/s against ours at ~2 means ~0.6-0.7x slow motion."""
+    src = pr.sources(); f = font(22)
+    sheet = Image.new('RGB', (13 * 120, len(specs) * 241), 'white'); d = ImageDraw.Draw(sheet)
+    for r, spec in enumerate(specs):
+        what, t0 = spec.rsplit('@', 1)
+        path = src.get(what, what)
+        y = r * 241
+        d.text((4, y + 2), f'{os.path.basename(what)[:24]} from {t0}s (every 1/6 s)', fill='red', font=f)
+        for i in range(13):
+            a = grab_rgb(path, float(t0) + i / 6, 120, 213)
+            if a is not None:
+                sheet.paste(Image.fromarray(a), (i * 120, y + 28))
+    save(sheet, pr, 'pace.jpg')
+
+
 def edl(pr, oid):
     shots = pr.load('edl.json')[oid]; src = pr.sources(); f = font(22); tiles = []
     for i, s in enumerate(shots):
-        k, st, d = s[:3]
+        k, st, d, _, opts = shot_parts(s)
         tw, th = tile_size(src[k], 240)
-        a = grab_rgb(src[k], st + d / 2, tw, th)
+        a = grab_rgb(src[k], st + d * float(opts.get('speed', 1.0)) / 2, tw, th)
         tiles.append((f'{oid}_{i} {k} @{st}+{d}', Image.fromarray(a)))
     sheet = Image.new('RGB', (sum(t.width for _, t in tiles), max(t.height for _, t in tiles) + 30), 'white')
     d = ImageDraw.Draw(sheet); x = 0
@@ -131,13 +149,13 @@ def edl(pr, oid):
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest='cmd', required=True)
-    for name in ('overview', 'strips', 'torso'):
+    for name in ('overview', 'strips', 'torso', 'pace'):
         s = project_arg(sub.add_parser(name)); s.add_argument('keys', nargs='*')
     e = project_arg(sub.add_parser('edl')); e.add_argument('outfit')
     a = ap.parse_args()
     pr = Project(a.project)
     {'overview': lambda: overview(pr, a.keys), 'strips': lambda: strips(pr, a.keys),
-     'torso': lambda: torso(pr, a.keys), 'edl': lambda: edl(pr, a.outfit)}[a.cmd]()
+     'torso': lambda: torso(pr, a.keys), 'pace': lambda: pace(pr, a.keys), 'edl': lambda: edl(pr, a.outfit)}[a.cmd]()
 
 
 if __name__ == '__main__':

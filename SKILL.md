@@ -3,8 +3,10 @@ name: douyin-fashion-edit
 description: >
   抖音/小红书服装穿搭短视频的全流程剪辑：把一堆模特试穿的原片（大疆 DJI / Mimo 草稿库 / 手机）按衣服分类，
   挑镜头、调色压高光、逐帧自然美颜与身形修饰、婚礼风字幕、节拍卡点配乐，产出每套衣服一条约 15 秒的竖屏视频；
-  并能拆解一条参考/模板视频（剪辑点、节奏、钩子字幕、转场、音乐），用自己的素材仿制成「换装合集」。
+  并能拆解一条参考/模板视频（剪辑点、节奏、钩子字幕、转场、音乐），用自己的素材仿制成「换装合集」，
+  或做「风格克隆」——同长度、同剪辑点、同慢动作、同滤镜（自动生成 LUT）、直接沿用原视频背景音乐。
   只要用户提到服装店/女装/穿搭视频、试穿素材、按衣服分类视频、抖音带货短视频、换装卡点、仿照/模仿/照着某个视频剪、
+  模仿某条视频的滤镜/色调/风格/音乐、
   给模特美颜瘦身、去原声配乐加字幕，就使用本 skill——即使没说「skill」或「HyperFrames」。
   Use for Douyin / Xiaohongshu / Reels fashion try-on footage: sort clips by outfit, grade, retouch, caption,
   beat-cut to music, and imitate a reference video's editing as an outfit-change compilation.
@@ -16,8 +18,9 @@ description: >
 
 | 成品 | 内容 | 长度 |
 |---|---|---|
-| 单套视频 | 一套衣服一条：5–7 个镜头卡拍硬切，婚礼风白色衬线字，结尾品牌卡 | ~15 s |
-| 换装合集 | 仿参考视频：开头黄色粗体钩子 → 每 4 拍甩镜换一套 → 品牌卡 | ~13–15 s |
+| 单套视频 | 一套衣服一条：5–7 个镜头卡拍硬切，婚礼风白色衬线字，结尾卡（默认不放店名） | ~15 s |
+| 换装合集 | 仿参考视频：开头黄色粗体钩子 → 每 4 拍甩镜换一套 → 结尾卡 | ~13–15 s |
+| 仿模板视频 | 风格克隆：一套衣服，照参考的剪辑点、慢动作、滤镜（LUT）和原声音乐 | 同参考 |
 
 这个 skill 的价值一半在脚本，一半在审美。**开工前先读 `references/aesthetic.md`**：选什么镜头、字放哪、文案怎么写、美颜到什么程度为止，都在里面，且都来自真实用户（30–50 岁女装店主）的反馈。
 
@@ -25,7 +28,7 @@ description: >
 
 ```bash
 python scripts/setup_check.py --install          # ffmpeg、Node、Python 依赖、MediaPipe 模型
-python scripts/init_project.py <工作目录>/edit --brand "店铺名" --end-line "关注我们 · 看更多秋冬穿搭"
+python scripts/init_project.py <工作目录>/edit --brand "店铺名" --end-line "关注我 · 每天分享一套穿搭"
 ```
 
 以下命令都在 skill 目录下运行，并加 `--project <工作目录>/edit`（下文省略）。所有配置在 `<project>/config/`，格式见 `references/config.md`。成片用 HyperFrames CLI 渲染（字幕叠层），按本 skill 的脚本走即可，不需要再跑 HyperFrames 的意图访谈；只有改字幕模板时才需读 `/hyperframes-core`。
@@ -61,8 +64,16 @@ Mimo 草稿库里每段有 4 个文件，只有 `<hash>_raw.mp4` 是原片；`so
 ### 9. 换装合集（模仿参考视频）
 `analyze_reference.py 参考视频.mp4` 拆出剪辑点、每镜时长、BPM、是否卡拍、音乐何时进；再看 `sheet.jpg` 和 `cut_*.jpg` 判断转场和字幕样式。按 `references/imitate.md` 映射成 `outfits.json` 的 `combos` 配置（可混用不同日期拍的素材），`render.py combo A B`。脚本会在钩子字可能挡住头时报警。
 
+### 9b. 风格克隆（照着一条视频原样做）
+用户想要参考视频的滤镜、拍法和音乐时：`analyze_reference.py` + `contact_sheet.py pace`（判断慢动作）→ EDL 里建一个镜头数和参考一致的 outfit（如 `c1`，镜头可带 `{"speed": 0.7}`）→ 调色、`render_shots`、`beautify` → `match_look.py build/apply` 生成并套用参考的 LUT → `outfits.json` 的 `clones` → `render.py clone A`。音乐用 `"music": "reference"` 原样沿用，但要提醒用户版权风险和「使用同款音乐」。详见 `references/imitate.md` 后半部分。
+
 ### 10. 交付
-`finalize.py --out <工作目录>/成片` 按「单套视频 / 换装合集」分文件夹、按「编号_衣服名_店铺名」命名，并核对 1080×1920 和 -14 LUFS。再按 `references/publishing.md` 写一份发布清单放进成片文件夹（换热门音乐的方法、每条文案和话题、发布时间）。
+`finalize.py --out <工作目录>/成片` 按「单套视频 / 换装合集 / 仿模板视频」分文件夹、按「编号_衣服名」命名（`showBrand: true` 才带店名），并核对 1080×1920 和 -14 LUFS；加 `--covers` 导出封面图。再按 `references/publishing.md` 写一份发布清单放进成片文件夹（换热门音乐的方法、每条文案和话题、发布时间）。
+
+## 隐私
+
+- 这个 skill 仓库只放脚本、模板和说明。**素材、成片、封面、审片图、`cache/` 里的人脸追踪数据、参考视频都不进仓库**，也不要放进 README 当示例图。`.gitignore` 已经挡住常见的视频、图片、音频、缓存格式；提交前用 `git status` 再看一眼。
+- 店名、人名、家庭关系、本机路径不要写进脚本和文档；示例统一用「某某服饰」。
 
 ## 跟用户说实话
 
@@ -87,6 +98,6 @@ Mimo 草稿库里每段有 4 个文件，只有 `<hash>_raw.mp4` 是原片；`so
 - `references/aesthetic.md` — 审美手册：选镜、调色、节奏、字幕版式、文案口吻、验收清单（**必读**）
 - `references/config.md` — 所有配置文件格式与示例
 - `references/retouch.md` — 美颜/身形参数、默认值、边界情况
-- `references/imitate.md` — 拆解参考视频并映射为合集配置
+- `references/imitate.md` — 拆解参考视频：映射为换装合集，或做风格克隆（慢动作、LUT 调色、原声）
 - `references/publishing.md` — 发布清单模板
 - `references/troubleshooting.md` — 踩过的坑（中文路径、MusicGen 报错、lint 错误等）

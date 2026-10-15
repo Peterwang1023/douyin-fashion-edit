@@ -1,6 +1,6 @@
 """Create an editing project: a HyperFrames project plus the config skeleton.
 
-    python init_project.py <dir> --brand "某某服饰" [--end-line "关注我们 · 看更多秋冬穿搭"]
+    python init_project.py <dir> --brand "某某服饰" [--end-line "关注我 · 每天分享一套穿搭"]
 
 Re-running on an existing project only fills in what is missing.
 """
@@ -16,8 +16,8 @@ import json  # noqa: E402
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('dir')
-    ap.add_argument('--brand', required=True, help='shop / brand name shown in every caption')
-    ap.add_argument('--end-line', default='关注我们 · 看更多穿搭', help='line under the brand on the end card')
+    ap.add_argument('--brand', required=True, help='shop / brand name (kept in config; drawn only with "showBrand": true)')
+    ap.add_argument('--end-line', default='关注我 · 每天分享一套穿搭', help='line under the title on the end card')
     a = ap.parse_args()
     root = os.path.abspath(a.dir)
 
@@ -28,7 +28,7 @@ def main():
         os.makedirs(os.path.join(root, d), exist_ok=True)
 
     defaults = {
-        'outfits.json': {'brand': a.brand, 'endLine': a.end_line, 'outfits': {}, 'combos': {}},
+        'outfits.json': {'brand': a.brand, 'showBrand': False, 'endTitle': '秋冬穿搭', 'endLine': a.end_line, 'outfits': {}, 'combos': {}},
         'sources.json': {}, 'edl.json': {}, 'grade.json': {}, 'music.json': {}, 'avail.json': {},
     }
     for name, data in defaults.items():

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "ZCOOL XiaoWei";
+          src: url("assets/fonts/xiaowei.woff2") format("woff2");
+        }
+        @font-face {
+          font-family: "Italiana";
+          src: url("assets/fonts/italiana.woff2") format("woff2");
+        }
+        @font-face {
+          font-family: "Noto Serif SC";
+          font-weight: 500;
+          src: url("assets/fonts/serif-500.woff2") format("woff2");
+        }
+        /* Healing / editorial captions, set vertically (竖排) beside the subject so they never sit on
+           the head or the clothes: literary serif (ZCOOL XiaoWei) revealed character by character,
+           thin sideways Latin (Italiana), a red seal as the brand mark. The side of every block is
+           chosen per window from the tracked body position (build_single.py). */
+        #{{OID}}-root {
+          --ink: #fffaf2;
+          --gold: #f1dcb4;
+          --seal: #b4432e;
+          --shade: 24, 20, 18;
+          --glow: 0 1px 2px rgba(var(--shade), 0.6), 0 2px 12px rgba(var(--shade), 0.5), 0 0 34px rgba(var(--shade), 0.32);
+          position: absolute;
+          inset: 0;
+          color: var(--ink);
+          font-family: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+        }
+        .shade {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 460px;
+          opacity: 0;
+        }
+        #shade-left {
+          left: 0;
+          background: linear-gradient(to right, rgba(var(--shade), 0.42) 0%, rgba(var(--shade), 0.26) 35%, rgba(var(--shade), 0.08) 75%, rgba(var(--shade), 0) 100%);
+        }
+        #shade-right {
+          right: 0;
+          background: linear-gradient(to left, rgba(var(--shade), 0.42) 0%, rgba(var(--shade), 0.26) 35%, rgba(var(--shade), 0.08) 75%, rgba(var(--shade), 0) 100%);
+        }
+        #shade-top {
+          left: 0;
+          right: 0;
+          width: auto;
+          bottom: auto;
+          height: 360px;
+          background: linear-gradient(to bottom, rgba(var(--shade), 0.34) 0%, rgba(var(--shade), 0.14) 55%, rgba(var(--shade), 0) 100%);
+        }
+        .seal {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 46px;
+          height: 46px;
+          border-radius: 6px;
+          background: var(--seal);
+          box-shadow: 0 2px 10px rgba(var(--shade), 0.35);
+          flex: none;
+        }
+        .seal span {
+          writing-mode: vertical-rl;
+          font-size: 19px;
+          line-height: 1;
+          color: #fff3e6;
+        }
+        .ch {
+          display: inline-block;
+        }
+
+        /* brand mark, top left (clear of Douyin's top bar) */
+        #brand {
+          position: absolute;
+          top: 186px;
+          left: 60px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .b1 {
+          font-size: 32px;
+          letter-spacing: 0.3em;
+          text-shadow: var(--glow);
+        }
+        .b2 {
+          margin-top: 4px;
+          font-family: "Italiana", serif;
+          font-size: 17px;
+          letter-spacing: 0.42em;
+          text-shadow: var(--glow);
+          opacity: 0.9;
+        }
+
+        /* vertical blocks: anchored 56 px from the chosen edge, starting at y = 290 */
+        .vb {
+          position: absolute;
+          top: 290px;
+          display: flex;
+          flex-direction: row-reverse;
+          align-items: flex-start;
+          gap: 14px;
+        }
+        .vb.left {
+          left: 56px;
+        }
+        .vb.right {
+          right: 56px;
+        }
+        .v {
+          writing-mode: vertical-rl;
+          text-shadow: var(--glow);
+          white-space: nowrap;
+        }
+        .v-t1 {
+          font-size: 78px;
+          line-height: 1;
+          letter-spacing: 0.12em;
+        }
+        .v-t2 {
+          margin-top: 70px;
+          font-family: "Noto Serif SC", serif;
+          font-weight: 500;
+          font-size: 28px;
+          line-height: 1;
+          letter-spacing: 0.3em;
+        }
+        .v-en {
+          margin-top: 6px;
+          font-family: "Italiana", serif;
+          font-size: 20px;
+          line-height: 1;
+          letter-spacing: 0.45em;
+          opacity: 0.92;
+        }
+        .v-rule {
+          width: 1.5px;
+          height: 120px;
+          margin-top: 70px;
+          background: var(--gold);
+          box-shadow: 0 1px 6px rgba(var(--shade), 0.4);
+          flex: none;
+        }
+        .v-ln {
+          font-size: 56px;
+          line-height: 1;
+          letter-spacing: 0.22em;
+        }
+        .v-it {
+          font-family: "Noto Serif SC", serif;
+          font-weight: 500;
+          font-size: 32px;
+          line-height: 1;
+          letter-spacing: 0.22em;
+        }
+        .v-ln-en {
+          margin-top: 40px;
+          font-family: "Italiana", serif;
+          font-size: 18px;
+          line-height: 1;
+          letter-spacing: 0.45em;
+          opacity: 0.9;
+        }
+
+        /* closing card, vertical */
+        .e-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 22px;
+        }
+        .e-seal {
+          width: 62px;
+          height: 62px;
+          border-radius: 8px;
+        }
+        .e-seal span {
+          font-size: 25px;
+        }
+        .v-e1 {
+          font-size: 100px;
+          line-height: 1;
+          letter-spacing: 0.14em;
+        }
+        .v-e2 {
+          margin-top: 96px;
+          font-family: "Noto Serif SC", serif;
+          font-weight: 500;
+          font-size: 28px;
+          line-height: 1;
+          letter-spacing: 0.28em;
+        }
+
+        #brand,
+        #title-block,
+        .lnb,
+        #end-block {
+          opacity: 0;
+        }
+      </style>
+      <div id="{{OID}}-root" data-composition-id="{{OID}}" data-width="1080" data-height="1920">
+        <div id="shade-top" class="shade"></div>
+        <div id="shade-left" class="shade"></div>
+        <div id="shade-right" class="shade"></div>
+
+        <div id="brand">
+          <div class="seal"><span>{{SEAL}}</span></div>
+          <div>
+            <div class="b1">{{BRAND}}</div>
+            <div class="b2">{{EN_BRAND}}</div>
+          </div>
+        </div>
+
+        <div id="title-block" class="vb {{SIDE_TITLE}}">
+          <div id="t1" class="v v-t1">{{TITLE_CHARS}}</div>
+          <span class="v-rule t-rule"></span>
+          <div id="t2" class="v v-t2">{{SUBTITLE}}</div>
+          <div id="en" class="v v-en">{{EN}}</div>
+        </div>
+
+{{LINES}}
+
+        <div id="end-block" class="vb {{SIDE_END}}">
+          <div class="e-col">
+            <div class="seal e-seal"><span>{{SEAL}}</span></div>
+            <div id="e1" class="v v-e1">{{BRAND_CHARS}}</div>
+          </div>
+          <div id="e2" class="v v-e2">{{END_LINE}}</div>
+          <div id="e3" class="v v-en">{{EN_BRAND}}</div>
+        </div>
+      </div>
+      <script>
+        const T = {{TIMING}};
+        const tl = gsap.timeline({ paused: true });
+
+        // shades: a faint top shade under the brand; the side shade of each block deepens while it shows
+        tl.fromTo("#shade-top", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "sine.out" }, 0.1);
+        tl.to("#shade-top", { opacity: 0, duration: 0.5, ease: "sine.in" }, T.endIn - 0.3);
+        const blocks = [[T.titleIn, T.titleOut + 0.5, T.sides.title], ...T.lines.map(([a, b], i) => [a, b + 0.35, T.sides.lines[i]]),
+                        [T.endIn, T.total + 1, T.sides.end]];
+        ["left", "right"].forEach((side) => {
+          const mine = blocks.filter((b) => b[2] === side).map((b) => [b[0], b[1]]).sort((p, q) => p[0] - q[0]);
+          const merged = [];
+          for (const sp of mine) {
+            const last = merged[merged.length - 1];
+            if (last && sp[0] - last[1] < 1.0) last[1] = Math.max(last[1], sp[1]);
+            else merged.push([...sp]);
+          }
+          let cursor = 0.05;
+          merged.forEach(([a, b], i) => {
+            const inAt = Math.max(cursor, a - 0.3);
+            tl.fromTo("#shade-" + side, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.inOut", immediateRender: i === 0 }, inAt);
+            if (b < T.total - 0.1) tl.to("#shade-" + side, { opacity: 0, duration: 0.5, ease: "sine.inOut" }, b);
+            cursor = b + 0.5;
+          });
+        });
+
+        tl.fromTo("#brand", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.8, ease: "power2.out" }, 0.35);
+        tl.to("#brand", { opacity: 0, duration: 0.35, ease: "power1.in" }, T.endIn - 0.3);
+
+        // title: characters float in out of soft focus, one by one, top to bottom
+        tl.set("#title-block", { opacity: 1 }, T.titleIn);
+        // (fast enough to read within the first second: the title is the hook)
+        tl.fromTo("#t1 .ch", { opacity: 0, y: -18, filter: "blur(8px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power2.out", stagger: 0.06 }, T.titleIn);
+        tl.fromTo(".t-rule", { scaleY: 0 }, { scaleY: 1, duration: 0.7, ease: "expo.out", transformOrigin: "50% 0%" }, T.titleIn + 0.3);
+        tl.fromTo(["#t2", "#en"], { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.5, ease: "sine.out", stagger: 0.12 }, T.titleIn + 0.35);
+        tl.to("#title-block", { opacity: 0, filter: "blur(4px)", duration: 0.5, ease: "power2.in" }, T.titleOut);
+
+        // healing lines / item line
+        T.lines.forEach(([a, b], i) => {
+          const el = "#ln-" + i;
+          tl.set(el, { opacity: 1 }, a);
+          tl.fromTo(el + " .ch", { opacity: 0, y: -14, filter: "blur(6px)" },
+            { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, ease: "power2.out", stagger: 0.08 }, a);
+          tl.fromTo(el + " .v-ln-en", { opacity: 0 }, { opacity: 0.9, duration: 0.6, ease: "sine.out" }, a + 0.35);
+          tl.to(el, { opacity: 0, duration: 0.35, ease: "power1.in" }, b);
+        });
+
+        // closing card: the seal stamps down, then the brand writes itself in
+        tl.set("#end-block", { opacity: 1 }, T.endIn);
+        tl.fromTo("#end-block .e-seal", { scale: 1.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, T.endIn);
+        tl.fromTo("#e1 .ch", { opacity: 0, y: -16, filter: "blur(6px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "power2.out", stagger: 0.09 }, T.endIn + 0.1);
+        tl.fromTo(["#e2", "#e3"], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "sine.out", stagger: 0.15 }, T.endIn + 0.5);
+
+        window.__timelines["{{OID}}"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

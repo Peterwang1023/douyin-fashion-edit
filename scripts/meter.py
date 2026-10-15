@@ -18,7 +18,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import Project, font, grab_rgb, grade_filter, project_arg  # noqa: E402
+from common import Project, font, grab_rgb, grade_filter, project_arg, shot_parts  # noqa: E402
 
 _casc = None
 
@@ -92,8 +92,8 @@ def cmd_suggest(pr, outfits):
     for o in outfits or sorted(edl):
         g = grade.get(o, [])
         for i, s in enumerate(edl[o]):
-            k, st, d = s[:3]
-            Y, rb, face = measure(src[k], st, d)
+            k, st, d, _, opts = shot_parts(s)
+            Y, rb, face = measure(src[k], st, d * float(opts.get('speed', 1.0)))
             sug = suggest_grade(Y, rb, face)
             ftxt = (f'face mean {face[0]:5.1f} p95 {face[1]:5.1f} clip {face[2]:4.1f}% skin R-B {face[3]:+5.1f}'
                     if face is not None else 'no face found')
@@ -110,8 +110,8 @@ def cmd_sheet(pr, oid):
     edl, grade, src = pr.load('edl.json'), pr.load('grade.json'), pr.sources()
     f = font(20); tiles = []
     for i, (s, g) in enumerate(zip(edl[oid], grade[oid])):
-        k, st, d = s[:3]
-        t = st + d / 2
+        k, st, d, _, opts = shot_parts(s)
+        t = st + d * float(opts.get('speed', 1.0)) / 2
         a = grab_rgb(src[k], t, 270, 480)
         raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{t:.3f}', '-i', src[k], '-frames:v', '1', '-vf',
                               grade_filter(*g, size='270:480') + ',format=rgb24', '-f', 'rawvideo', '-'], capture_output=True).stdout

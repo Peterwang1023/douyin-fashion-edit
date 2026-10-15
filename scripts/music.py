@@ -28,6 +28,7 @@ PRESETS = {  # mood -> (prompt, target bpm)
     'dusk': ("gentle romantic piano and strings, soft warm pads, light brushed drums, elegant evening mood, 90 bpm, major key, tender and graceful, no vocals", 90),
     'breeze': ("light breezy acoustic pop, bright acoustic guitar and soft piano, gentle claps and shaker, warm sunny autumn morning, 100 bpm, major key, no vocals", 100),
     'jazz': ("smooth light jazz pop, brushed drums, warm upright bass, mellow electric piano, elegant relaxed stroll, 96 bpm, major key, no vocals", 96),
+    'healing': ("healing gentle acoustic music, soft felt piano and warm fingerpicked guitar, light soft percussion, airy pads, peaceful sunny afternoon, hopeful and tender, 96 bpm, major key, no vocals", 96),
     'runway': ("stylish fashion runway house track, punchy four on the floor kick, deep groovy bass, glossy synth chords, confident catwalk energy, 125 bpm, modern trendy, no vocals", 125),
 }
 

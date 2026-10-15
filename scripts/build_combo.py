@@ -19,7 +19,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import ASSETS, Project, duration, npx, project_arg  # noqa: E402
+from common import ASSETS, Project, brand_mode, duration, inject_css, npx, project_arg  # noqa: E402
 from fonts import ensure_fonts  # noqa: E402
 
 WHIP = 0.5   # whip window, centred on the cut (peak velocity lands on the beat)
@@ -132,7 +132,7 @@ def build(pr, cid):
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a0:.3f}', '-i', pr.path(m['file']), '-t', f'{total:.3f}', '-filter_complex',
                     f'[0:a]aresample=48000,pan=stereo|c0=c0|c1=c0,asplit[h][d];'
                     f'[h]atrim=0:{drop:.3f},lowpass=f=500,volume=0.3,afade=t=in:d=0.3,afade=t=out:st={drop - 0.03:.3f}:d=0.03[h1];'
-                    f'[d]atrim={drop:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={total - drop - 1.6:.3f}:d=1.6[d1];'
+                    f'[d]atrim={drop:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={total - drop - 0.8:.3f}:d=0.8[d1];'
                     f'[h1][d1]concat=n=2:v=0:a=1,loudnorm=I=-14:TP=-1.5:LRA=9[out]',
                     '-map', '[out]', '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', pr.path(bgm)], check=True)
 
@@ -143,18 +143,18 @@ def build(pr, cid):
     timing = {'total': total, 'hookOut': round(starts[1], 3), 'endIn': end_in,
               'labels': [[round(s0 + pre + 0.05, 3), round(min(s0 + L - pre, end_in - 0.1), 3)] for s0, L in zip(starts[1:], lens[1:])]}
     ov = open(os.path.join(ASSETS, 'template-combo-overlay.html'), encoding='utf-8').read()
-    for k2, v in {'{{OID}}': f'{oid}-overlay', '{{HOOK_LINES}}': hook, '{{LABELS}}': labels, '{{BRAND}}': html.escape(cfg['brand']),
+    for k2, v in {'{{OID}}': f'{oid}-overlay', '{{HOOK_LINES}}': hook, '{{LABELS}}': labels, '{{BRAND}}': html.escape(brand_mode(cfg)[1]),
                   '{{END_LINE}}': html.escape(cfg['endLine']), '{{TIMING}}': json.dumps(timing),
                   '{{HOOK_COLOR}}': c.get('hookColor', '#ffe14a'), '{{HOOK_STROKE}}': c.get('hookStroke', '#111111')}.items():
         ov = ov.replace(k2, v)
     ensure_fonts(pr)
-    open(pr.path('compositions', f'{oid}-overlay.html'), 'w', encoding='utf-8').write(ov)
+    open(pr.path('compositions', f'{oid}-overlay.html'), 'w', encoding='utf-8').write(inject_css(ov, brand_mode(cfg)[2]))
 
     page = open(os.path.join(ASSETS, 'template-index.html'), encoding='utf-8').read()
     host = (f'      <div id="{oid}-overlay" data-composition-id="{oid}-overlay" data-composition-src="compositions/{oid}-overlay.html" '
             f'data-start="0" data-duration="{total:.3f}" data-track-index="2" data-width="1080" data-height="1920"></div>')
     page = re.sub(r'\n      <div\s+id="\{\{OID\}\}".*?></div>', '\n' + host, page, flags=re.S)
-    page = (page.replace('{{ID}}', oid).replace('{{TOTAL}}', f'{total:.3f}').replace('{{BGM}}', bgm)
+    page = (page.replace('{{ROOT_TWEENS}}', '').replace('{{ID}}', oid).replace('{{TOTAL}}', f'{total:.3f}').replace('{{BGM}}', bgm)
             .replace('{{VIDEOS}}', '\n'.join(videos) + ('\n\n' + '\n'.join(whips) if whips else '')))
     open(pr.path('index.html'), 'w', encoding='utf-8').write(page)
     print(f'{oid}: {total:.2f}s  beat {beat:.3f}s  look {look:.2f}s  transition {transition}  starts {[round(x, 2) for x in starts]}')

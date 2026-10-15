@@ -100,6 +100,40 @@ def grade_filter(L, Wm, Hl=0.5, size=f'{W}:{H}'):
     return ','.join(f)
 
 
+def brand_mode(cfg):
+    """Platform-safe captions: unless outfits.json sets "showBrand": true, no shop name, seal or
+    English brand line is drawn anywhere (Douyin flags a shop name / logo as steering viewers to
+    off-platform or offline trading). The end card then shows "endTitle" instead of the brand.
+    Returns (show_brand, end_title, css_to_hide_brand_elements)."""
+    show = bool(cfg.get('showBrand', False))
+    end_title = cfg['brand'] if show else cfg.get('endTitle', '秋冬穿搭')
+    css = '' if show else ('\n        /* brand-free (platform-safe) mode */\n'
+                           '        #brand, #brand-line, .seal, #e3 { display: none !important; }\n')
+    return show, end_title, css
+
+
+def inject_css(page, css):
+    return page.replace('<style>', '<style>' + css, 1) if css else page
+
+
+def shot_parts(s):
+    """EDL entry -> (source key, in point s, duration s, max duration or None, options dict).
+    Entry forms: [key, in, dur], [key, in, dur, max], [key, in, dur, {"speed": 0.7}], [key, in, dur, max, {...}].
+    Durations are timeline (output) seconds; with speed < 1 the shot consumes dur * speed source seconds."""
+    opts = s[-1] if isinstance(s[-1], dict) else {}
+    rest = [x for x in s[3:] if not isinstance(x, dict)]
+    return s[0], float(s[1]), float(s[2]), (float(rest[0]) if rest else None), opts
+
+
+def peak_db(path):
+    """Peak level of the audio in a file (dB), -inf when silent or there is no audio stream."""
+    import re
+    out = subprocess.run(['ffmpeg', '-i', path, '-vn', '-af', 'astats=metadata=0', '-f', 'null', '-'], capture_output=True,
+                         text=True, encoding='utf-8', errors='replace').stderr
+    m = re.findall(r'Overall[\s\S]*?Peak level dB:\s*(-?inf|-?[0-9.]+)', out) or re.findall(r'Peak level dB:\s*(-?inf|-?[0-9.]+)', out)
+    return float(m[-1]) if m else float('-inf')
+
+
 def need(tool):
     if not shutil.which(tool):
         sys.exit(f'{tool} not found on PATH')
@@ -117,7 +151,11 @@ def duration(path):
 
 
 def video_size(path):
+    """Displayed size: phone / DJI Mimo files are often stored landscape with a -90 rotation flag."""
     w, h = probe(path, 'stream=width,height')[0].split(',')[:2]
+    rot = probe(path, 'stream_side_data=rotation')
+    if any(r.strip().lstrip('-') in ('90', '270') for r in rot):
+        w, h = h, w
     return int(w), int(h)
 
 

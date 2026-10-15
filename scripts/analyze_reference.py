@@ -19,7 +19,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import Project, duration, font, probe, project_arg, video_size  # noqa: E402
+from common import Project, duration, font, peak_db, probe, project_arg, video_size  # noqa: E402
 from music import analyze as analyze_audio  # noqa: E402
 
 
@@ -70,8 +70,12 @@ def main():
         around(a.video, t, os.path.join(out, f'cut_{i}.jpg'))
 
     wav = os.path.join(out, 'audio.wav')
-    has_audio = bool(probe(a.video, 'stream=codec_type')) and 'audio' in ' '.join(probe(a.video, 'stream=codec_type'))
+    has_audio = 'audio' in ' '.join(probe(a.video, 'stream=codec_type'))
+    silent = has_audio and peak_db(a.video) < -60
+    if silent:
+        has_audio = False           # muted soundtrack (music was added on the platform, or stripped on download)
     res = {'file': os.path.abspath(a.video), 'duration': round(dur, 3), 'size': [w, h], 'fps': fps, 'editor': editor,
+           'soundtrack': 'silent' if silent else ('yes' if has_audio else 'none'),
            'cuts': cuts, 'shot_lengths': shots, 'median_shot': float(np.median(shots)) if shots else None}
     if has_audio:
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', a.video, '-vn', '-ac', '1', '-ar', '32000', wav], check=True)
@@ -109,11 +113,16 @@ def main():
     print(f'{os.path.basename(a.video)}: {dur:.2f}s {w}x{h} @ {fps} ({editor})')
     print(f'cuts ({len(cuts)}): {cuts}')
     print(f'shot lengths: {shots}  median {res["median_shot"]}')
+    if silent:
+        print('soundtrack: SILENT (no music to copy; pick a music.json bed for a clone, and suggest a platform song)')
     if has_audio:
         print(f'music ~{res["bpm"]} bpm, first beat {res["first_beat"]}s, drop at ~{res["music_drop_s"]}s')
         print(f'cut spacing in beats: {res["cut_spacing_in_beats"]}  regular grid: {res["cuts_on_regular_grid"]} '
               f'(jitter {res["grid_jitter_beats"]} beats; <0.12 = cut on the beat, 0.12-0.3 = roughly, timed by the action)  '
-              f'phase vs kick: {res["cut_phase_offset_s"]:+.2f}s')
+              f'phase vs kick: {res["cut_phase_offset_s"] if res["cut_phase_offset_s"] is None else format(res["cut_phase_offset_s"], "+.2f")}s')
+        if not cuts:
+            print('no hard cuts found: one continuous take, or soft transitions (dissolves / speed ramps) -> read sheet.jpg; '
+                  'try --threshold 0.12 to catch softer cuts')
         print(f'suggested combo params: {res["suggest"]}')
     print(f'look at: {out}\\sheet.jpg and cut_*.jpg')
 
